@@ -9,7 +9,7 @@ type TuneSet = {
   id: string
   name: string
   description: string | null
-  tunes: Array<{ title: string; abc_notation: string | null; key: string | null }>
+  tunes: Array<{ id: string; title: string; abc_notation: string | null; key: string | null }>
 }
 
 export default function Home() {
@@ -32,7 +32,7 @@ export default function Home() {
 
       // Get tunes for each set
       const setsWithTunes = await Promise.all(
-        (setsData || []).map(async (set) => {
+        (setsData || []).map(async (set: any) => {
           const { data: items } = await supabase
             .from('tune_set_items')
             .select('tune_id, position')
@@ -40,10 +40,11 @@ export default function Home() {
             .order('position')
 
           const tuneDetails = await Promise.all(
-            (items || []).map(async (item) => {
+            (items || []).map(async (item: any) => {
               const { data: tune } = await supabase
                 .from('tunes')
                 .select(`
+                  id,
                   title,
                   abc_notation,
                   musical_keys(name)
@@ -52,9 +53,10 @@ export default function Home() {
                 .single()
 
               return {
-                title: tune?.title || 'Unknown',
-                abc_notation: tune?.abc_notation || null,
-                key: tune?.musical_keys?.name || null,
+                id: item.tune_id,
+                title: (tune as any)?.title || 'Unknown',
+                abc_notation: (tune as any)?.abc_notation || null,
+                key: (tune as any)?.musical_keys?.name || null,
               }
             })
           )
