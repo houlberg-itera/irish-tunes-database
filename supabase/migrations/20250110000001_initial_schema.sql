@@ -98,6 +98,9 @@ CREATE TABLE tunes (
     notes TEXT,
     historical_notes TEXT,
     
+    -- External references
+    thesession_tune_id INTEGER UNIQUE, -- TheSession.org tune ID
+    
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -118,6 +121,7 @@ CREATE INDEX idx_tunes_title ON tunes(title);
 CREATE INDEX idx_tunes_type ON tunes(tune_type_id);
 CREATE INDEX idx_tunes_key ON tunes(key_id);
 CREATE INDEX idx_tunes_composer ON tunes(composer_id);
+CREATE INDEX idx_tunes_thesession_id ON tunes(thesession_tune_id);
 
 -- Table: tune_aliases
 -- Stores alternative names for tunes
@@ -246,6 +250,87 @@ CREATE INDEX idx_tune_tags_tune ON tune_tags(tune_id);
 CREATE INDEX idx_tune_tags_tag ON tune_tags(tag_id);
 
 -- ============================================================================
+-- PRACTICE TRACKING
+-- ============================================================================
+
+-- Table: user_tune_practice
+-- Tracks user's practice sessions and proficiency for each tune
+CREATE TABLE user_tune_practice (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL, -- Reference to your auth user
+    tune_id UUID NOT NULL REFERENCES tunes(id) ON DELETE CASCADE,
+    
+    -- Proficiency tracking
+    proficiency_level INTEGER CHECK (proficiency_level BETWEEN 1 AND 5), -- 1=Learning, 2=Practicing, 3=Competent, 4=Proficient, 5=Mastered
+    proficiency_notes TEXT,
+    
+    -- Practice statistics
+    total_practice_time_minutes INTEGER DEFAULT 0,
+    practice_count INTEGER DEFAULT 0,
+    last_practiced_at TIMESTAMPTZ,
+    
+    -- Learning progress
+    started_learning_at TIMESTAMPTZ DEFAULT NOW(),
+    achieved_proficiency_at TIMESTAMPTZ, -- When reached level 4 or 5
+    
+    -- Personal notes
+    learning_notes TEXT,
+    trouble_spots TEXT, -- Specific sections that need work
+    
+    -- Practice goals
+    target_proficiency_level INTEGER CHECK (target_proficiency_level BETWEEN 1 AND 5),
+    target_date DATE,
+    
+    -- Status
+    is_active BOOLEAN DEFAULT TRUE, -- Whether actively practicing this tune
+    is_favorite BOOLEAN DEFAULT FALSE,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(user_id, tune_id)
+);
+
+COMMENT ON TABLE user_tune_practice IS 'Tracks user practice sessions and proficiency levels for tunes';
+COMMENT ON COLUMN user_tune_practice.proficiency_level IS '1=Learning, 2=Practicing, 3=Competent, 4=Proficient, 5=Mastered';
+
+CREATE INDEX idx_user_tune_practice_user ON user_tune_practice(user_id);
+CREATE INDEX idx_user_tune_practice_tune ON user_tune_practice(tune_id);
+CREATE INDEX idx_user_tune_practice_proficiency ON user_tune_practice(proficiency_level);
+CREATE INDEX idx_user_tune_practice_active ON user_tune_practice(is_active) WHERE is_active = TRUE;
+
+-- Table: practice_sessions
+-- Individual practice session logs
+CREATE TABLE practice_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    tune_id UUID NOT NULL REFERENCES tunes(id) ON DELETE CASCADE,
+    
+    -- Session details
+    session_date TIMESTAMPTZ DEFAULT NOW(),
+    duration_minutes INTEGER,
+    tempo_bpm INTEGER, -- Beats per minute practiced at
+    
+    -- Session quality/notes
+    quality_rating INTEGER CHECK (quality_rating BETWEEN 1 AND 5),
+    notes TEXT,
+    what_worked TEXT,
+    what_needs_work TEXT,
+    
+    -- Progress indicators
+    memorized BOOLEAN DEFAULT FALSE,
+    played_full_speed BOOLEAN DEFAULT FALSE,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+COMMENT ON TABLE practice_sessions IS 'Individual practice session logs for detailed tracking';
+
+CREATE INDEX idx_practice_sessions_user ON practice_sessions(user_id);
+CREATE INDEX idx_practice_sessions_tune ON practice_sessions(tune_id);
+CREATE INDEX idx_practice_sessions_date ON practice_sessions(session_date);
+
+-- ============================================================================
 -- TRIGGERS AND FUNCTIONS
 -- ============================================================================
 
@@ -282,6 +367,11 @@ CREATE TRIGGER update_sources_updated_at
 
 CREATE TRIGGER update_tune_sets_updated_at
     BEFORE UPDATE ON tune_sets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER update_user_tune_practice_updated_at
+    BEFORE UPDATE ON user_tune_practice
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
 

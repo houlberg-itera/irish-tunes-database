@@ -52,10 +52,10 @@ INSERT INTO musical_keys (name, mode, display_order) VALUES
 ('E Dorian', 'dorian', 22),
 ('G Dorian', 'dorian', 23),
 ('A Dorian', 'dorian', 24),
-('D Mixolydian', 'mixolydian', 31),
-('G Mixolydian', 'mixolydian', 32),
-('A Mixolydian', 'mixolydian', 33),
-('E Mixolydian', 'mixolydian', 34)
+('D Mixo', 'mixolydian', 31),
+('G Mixo', 'mixolydian', 32),
+('A Mixo', 'mixolydian', 33),
+('E Mixo', 'mixolydian', 34)
 ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================

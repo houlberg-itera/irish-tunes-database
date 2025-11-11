@@ -98,138 +98,110 @@ ORDER BY tune_count DESC;
 COMMENT ON VIEW tunes_by_key IS 'Statistics on number of tunes per key';
 
 -- ============================================================================
--- HELPER FUNCTIONS
+-- PRACTICE TRACKING VIEWS
 -- ============================================================================
 
--- Function: search_tunes
--- Full-text search for tunes
-CREATE OR REPLACE FUNCTION search_tunes(search_query TEXT)
-RETURNS TABLE (
-    id UUID,
-    title VARCHAR(300),
-    tune_type VARCHAR(50),
-    key VARCHAR(10),
-    relevance REAL
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        t.id,
-        t.title,
-        tt.name AS tune_type,
-        mk.name AS key,
-        ts_rank(t.search_vector, plainto_tsquery('english', search_query)) AS relevance
-    FROM tunes t
-    LEFT JOIN tune_types tt ON t.tune_type_id = tt.id
-    LEFT JOIN musical_keys mk ON t.key_id = mk.id
-    WHERE t.search_vector @@ plainto_tsquery('english', search_query)
-    ORDER BY relevance DESC;
-END;
-$$ LANGUAGE plpgsql;
+-- View: my_practice_tunes
+-- User's tunes with practice status and proficiency
+CREATE OR REPLACE VIEW my_practice_tunes AS
+SELECT 
+    t.id,
+    t.title,
+    tt.name AS tune_type,
+    mk.name AS key,
+    t.mode,
+    t.time_signature,
+    t.difficulty_level,
+    t.abc_notation,
+    utp.proficiency_level,
+    CASE utp.proficiency_level
+        WHEN 1 THEN 'Learning'
+        WHEN 2 THEN 'Practicing'
+        WHEN 3 THEN 'Competent'
+        WHEN 4 THEN 'Proficient'
+        WHEN 5 THEN 'Mastered'
+    END AS proficiency_status,
+    utp.total_practice_time_minutes,
+    utp.practice_count,
+    utp.last_practiced_at,
+    utp.is_active,
+    utp.is_favorite,
+    utp.learning_notes,
+    utp.trouble_spots,
+    utp.target_proficiency_level,
+    utp.target_date,
+    utp.user_id
+FROM user_tune_practice utp
+JOIN tunes t ON utp.tune_id = t.id
+LEFT JOIN tune_types tt ON t.tune_type_id = tt.id
+LEFT JOIN musical_keys mk ON t.key_id = mk.id;
 
-COMMENT ON FUNCTION search_tunes IS 'Full-text search across tune titles and notes';
+COMMENT ON VIEW my_practice_tunes IS 'User tunes with practice tracking and proficiency levels';
 
--- Function: get_tunes_in_key
--- Get all tunes in a specific key
-CREATE OR REPLACE FUNCTION get_tunes_in_key(key_name VARCHAR(10))
-RETURNS TABLE (
-    id UUID,
-    title VARCHAR(300),
-    tune_type VARCHAR(50),
-    mode VARCHAR(20),
-    time_signature VARCHAR(10)
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        t.id,
-        t.title,
-        tt.name AS tune_type,
-        t.mode,
-        t.time_signature
-    FROM tunes t
-    LEFT JOIN tune_types tt ON t.tune_type_id = tt.id
-    JOIN musical_keys mk ON t.key_id = mk.id
-    WHERE mk.name = key_name
-    ORDER BY t.title;
-END;
-$$ LANGUAGE plpgsql;
+-- View: active_practice_tunes
+-- Currently active practice tunes
+CREATE OR REPLACE VIEW active_practice_tunes AS
+SELECT 
+    t.id,
+    t.title,
+    tt.name AS tune_type,
+    mk.name AS key,
+    utp.proficiency_level,
+    utp.last_practiced_at,
+    utp.total_practice_time_minutes,
+    utp.user_id
+FROM user_tune_practice utp
+JOIN tunes t ON utp.tune_id = t.id
+LEFT JOIN tune_types tt ON t.tune_type_id = tt.id
+LEFT JOIN musical_keys mk ON t.key_id = mk.id
+WHERE utp.is_active = TRUE
+ORDER BY utp.last_practiced_at DESC NULLS LAST;
 
-COMMENT ON FUNCTION get_tunes_in_key IS 'Get all tunes in a specific key';
+COMMENT ON VIEW active_practice_tunes IS 'Currently active practice tunes';
 
--- Function: get_tunes_by_type
--- Get all tunes of a specific type
-CREATE OR REPLACE FUNCTION get_tunes_by_type(type_name VARCHAR(50))
-RETURNS TABLE (
-    id UUID,
-    title VARCHAR(300),
-    key VARCHAR(10),
-    mode VARCHAR(20),
-    time_signature VARCHAR(10)
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        t.id,
-        t.title,
-        mk.name AS key,
-        t.mode,
-        t.time_signature
-    FROM tunes t
-    LEFT JOIN musical_keys mk ON t.key_id = mk.id
-    JOIN tune_types tt ON t.tune_type_id = tt.id
-    WHERE tt.name = type_name
-    ORDER BY t.title;
-END;
-$$ LANGUAGE plpgsql;
+-- View: practice_statistics
+-- Overall practice statistics per user
+CREATE OR REPLACE VIEW practice_statistics AS
+SELECT 
+    user_id,
+    COUNT(*) AS total_tunes,
+    COUNT(*) FILTER (WHERE is_active = TRUE) AS active_tunes,
+    COUNT(*) FILTER (WHERE proficiency_level >= 4) AS proficient_tunes,
+    COUNT(*) FILTER (WHERE proficiency_level = 5) AS mastered_tunes,
+    SUM(total_practice_time_minutes) AS total_practice_minutes,
+    SUM(practice_count) AS total_practice_sessions,
+    MAX(last_practiced_at) AS last_practice_date
+FROM user_tune_practice
+GROUP BY user_id;
 
-COMMENT ON FUNCTION get_tunes_by_type IS 'Get all tunes of a specific type';
+COMMENT ON VIEW practice_statistics IS 'Overall practice statistics per user';
 
--- Function: increment_play_count
--- Increment the play count for a tune
-CREATE OR REPLACE FUNCTION increment_play_count(tune_uuid UUID)
-RETURNS VOID AS $$
-BEGIN
-    UPDATE tunes 
-    SET 
-        play_count = play_count + 1,
-        popularity_score = popularity_score + 1
-    WHERE id = tune_uuid;
-END;
-$$ LANGUAGE plpgsql;
+-- View: my_tune_sets_with_tunes
+-- User's sets with their tunes and practice status
+CREATE OR REPLACE VIEW my_tune_sets_with_tunes AS
+SELECT 
+    ts.id AS set_id,
+    ts.name AS set_name,
+    ts.description AS set_description,
+    ts.created_by,
+    tsi.position,
+    t.id AS tune_id,
+    t.title AS tune_title,
+    tt.name AS tune_type,
+    mk.name AS key,
+    t.time_signature,
+    t.abc_notation,
+    utp.proficiency_level,
+    utp.is_active AS is_practicing
+FROM tune_sets ts
+JOIN tune_set_items tsi ON ts.id = tsi.set_id
+JOIN tunes t ON tsi.tune_id = t.id
+LEFT JOIN tune_types tt ON t.tune_type_id = tt.id
+LEFT JOIN musical_keys mk ON t.key_id = mk.id
+LEFT JOIN user_tune_practice utp ON t.id = utp.tune_id AND ts.created_by = utp.user_id
+ORDER BY ts.id, tsi.position;
 
-COMMENT ON FUNCTION increment_play_count IS 'Increment play count and popularity for a tune';
-
--- Function: get_tune_set_tunes
--- Get all tunes in a set in order
-CREATE OR REPLACE FUNCTION get_tune_set_tunes(set_uuid UUID)
-RETURNS TABLE (
-    position INTEGER,
-    tune_id UUID,
-    title VARCHAR(300),
-    tune_type VARCHAR(50),
-    key VARCHAR(10),
-    time_signature VARCHAR(10)
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        tsi.position,
-        t.id AS tune_id,
-        t.title,
-        tt.name AS tune_type,
-        mk.name AS key,
-        t.time_signature
-    FROM tune_set_items tsi
-    JOIN tunes t ON tsi.tune_id = t.id
-    LEFT JOIN tune_types tt ON t.tune_type_id = tt.id
-    LEFT JOIN musical_keys mk ON t.key_id = mk.id
-    WHERE tsi.set_id = set_uuid
-    ORDER BY tsi.position;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION get_tune_set_tunes IS 'Get all tunes in a set ordered by position';
+COMMENT ON VIEW my_tune_sets_with_tunes IS 'User sets with tunes and practice status';
 
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
