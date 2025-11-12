@@ -23,6 +23,7 @@ export default function EditTunePage({ params }: { params: Promise<{ id: string 
     abc_notation: '',
     notes: '',
     region: '',
+    to_be_learned: false,
   })
   const [tuneTypes, setTuneTypes] = useState<any[]>([])
   const [musicalKeys, setMusicalKeys] = useState<any[]>([])
@@ -60,6 +61,7 @@ export default function EditTunePage({ params }: { params: Promise<{ id: string 
         abc_notation: tune.abc_notation || '',
         notes: tune.notes || '',
         region: tune.region || '',
+        to_be_learned: tune.to_be_learned || false,
       })
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -424,6 +426,7 @@ export default function EditTunePage({ params }: { params: Promise<{ id: string 
           abc_notation: formData.abc_notation || null,
           notes: formData.notes || null,
           region: formData.region || null,
+          to_be_learned: formData.to_be_learned,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -570,6 +573,19 @@ export default function EditTunePage({ params }: { params: Promise<{ id: string 
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-irish-green-500 focus:border-transparent"
             placeholder="Additional notes about this tune..."
           />
+          
+          <div className="mt-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                id="to_be_learned"
+                checked={formData.to_be_learned}
+                onChange={(e) => setFormData({ ...formData, to_be_learned: e.target.checked })}
+                className="w-4 h-4 text-irish-green-600 border-gray-300 rounded focus:ring-irish-green-500"
+              />
+              <span className="text-sm text-gray-700">Mark as 'To be learned' (tune not yet learned)</span>
+            </label>
+          </div>
         </div>
 
         <div className="flex gap-3">

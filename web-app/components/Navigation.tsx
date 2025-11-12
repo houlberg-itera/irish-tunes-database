@@ -12,8 +12,8 @@ export default function Navigation() {
     { href: '/', label: 'Home', icon: '🏠' },
     { href: '/tunes', label: 'My Tunes', icon: '📚' },
     { href: '/tunes/add', label: 'Add Tune', icon: '➕' },
+    { href: '/tunes/to-learn', label: 'To Learn', icon: '📖' },
     { href: '/sets', label: 'Sets', icon: '🎼' },
-    { href: '/practice', label: 'Stats', icon: '📊' },
   ]
 
   return (

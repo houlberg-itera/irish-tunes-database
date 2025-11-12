@@ -24,6 +24,8 @@ export default function AddTunePage() {
   const [searchResults, setSearchResults] = useState<TheSessionTune[]>([])
   const [searching, setSearching] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [youtubeLinks, setYoutubeLinks] = useState<Array<{title: string, url: string, thumbnail: string}>>([])
+  const [loadingYoutube, setLoadingYoutube] = useState(false)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -34,6 +36,7 @@ export default function AddTunePage() {
     notes: '',
     region: '',
     thesession_tune_id: null as number | null,
+    to_be_learned: false,
   })
   const [tuneTypes, setTuneTypes] = useState<any[]>([])
   const [musicalKeys, setMusicalKeys] = useState<any[]>([])
@@ -44,6 +47,17 @@ export default function AddTunePage() {
     fetchReferenceData()
   }, [])
 
+  useEffect(() => {
+    if (formData.title.length > 2) {
+      const timer = setTimeout(() => {
+        searchYouTube(formData.title)
+      }, 1000) // Debounce 1 second
+      return () => clearTimeout(timer)
+    } else {
+      setYoutubeLinks([])
+    }
+  }, [formData.title])
+
   async function fetchReferenceData() {
     const [typesResult, keysResult] = await Promise.all([
       supabase.from('tune_types').select('*').order('name'),
@@ -52,6 +66,38 @@ export default function AddTunePage() {
 
     if (typesResult.data) setTuneTypes(typesResult.data)
     if (keysResult.data) setMusicalKeys(keysResult.data)
+  }
+
+  async function searchYouTube(tuneName: string) {
+    if (!tuneName.trim()) {
+      setYoutubeLinks([])
+      return
+    }
+
+    setLoadingYoutube(true)
+    try {
+      // Create direct YouTube search links with different search variations
+      const searchVariations = [
+        `${tuneName} irish traditional music`,
+        `${tuneName} traditional irish tune`,
+        `${tuneName} session tune`,
+        `${tuneName} slow tutorial`,
+        `${tuneName} played on fiddle`,
+      ]
+
+      const links = searchVariations.map((query, index) => ({
+        title: query,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+        thumbnail: '', // No thumbnail for search links
+      }))
+
+      setYoutubeLinks(links)
+    } catch (err) {
+      console.error('Error creating YouTube links:', err)
+      setYoutubeLinks([])
+    } finally {
+      setLoadingYoutube(false)
+    }
   }
 
   async function searchTheSession() {
@@ -204,23 +250,13 @@ export default function AddTunePage() {
             notes: formData.notes || null,
             region: formData.region || null,
             thesession_tune_id: formData.thesession_tune_id,
+            to_be_learned: formData.to_be_learned,
           },
         ])
         .select()
         .single()
 
       if (tuneError) throw tuneError
-
-      // Optionally create initial practice tracking entry
-      const userId = 'demo-user-123' // Replace with actual auth
-      await supabase.from('user_tune_practice').insert([
-        {
-          user_id: userId,
-          tune_id: (tune as any).id,
-          proficiency_level: 1,
-          is_active: true,
-        },
-      ])
 
       router.push(`/tunes/${(tune as any).id}`)
     } catch (err: any) {
@@ -410,6 +446,19 @@ export default function AddTunePage() {
                 placeholder="Any notes about this tune..."
               />
             </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="to_be_learned"
+                checked={formData.to_be_learned}
+                onChange={(e) => setFormData({ ...formData, to_be_learned: e.target.checked })}
+                className="w-4 h-4 text-irish-green-600 border-gray-300 rounded focus:ring-irish-green-500"
+              />
+              <label htmlFor="to_be_learned" className="text-sm font-medium text-gray-700 cursor-pointer">
+                Mark as "To be learned" (tune not yet learned)
+              </label>
+            </div>
           </div>
         </div>
 
@@ -442,6 +491,52 @@ export default function AddTunePage() {
             )}
           </div>
         </div>
+
+        {/* YouTube Links */}
+        {formData.title && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">🎥 YouTube Videos</h2>
+            {loadingYoutube ? (
+              <div className="text-center py-8">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-irish-green-600 border-r-transparent"></div>
+                <p className="mt-2 text-sm text-gray-600">Preparing YouTube searches...</p>
+              </div>
+            ) : youtubeLinks.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 mb-3">
+                  Click any link below to search YouTube for "{formData.title}":
+                </p>
+                {youtubeLinks.map((link, index) => (
+                  <a
+                    key={index}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-irish-green-300 hover:bg-gray-50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-sm font-medium">
+                        ▶
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">
+                          Search: {link.title}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-irish-green-600 font-medium group-hover:text-irish-green-700">
+                      Open YouTube →
+                    </span>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm py-4">
+                Enter a tune name above to get YouTube search links.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-4">
           <button

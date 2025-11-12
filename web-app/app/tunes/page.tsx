@@ -9,18 +9,12 @@ import type { Database } from '@/lib/database.types'
 type Tune = Database['public']['Tables']['tunes']['Row'] & {
   tune_type?: string
   key?: string
-  practice_info?: {
-    proficiency_level: number | null
-    is_active: boolean
-    is_favorite: boolean
-    last_practiced_at: string | null
-  }
 }
 
 export default function TunesPage() {
   const [tunes, setTunes] = useState<Tune[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'practicing' | 'favorites'>('all')
+  const [filter, setFilter] = useState<'all' | 'learned' | 'to-learn'>('all')
 
   useEffect(() => {
     fetchTunes()
@@ -29,10 +23,6 @@ export default function TunesPage() {
   async function fetchTunes() {
     setLoading(true)
     try {
-      // For demo purposes, using a mock user_id. Replace with actual auth.
-      const userId = 'demo-user-123'
-
-      // Fetch tunes with related data
       const { data: tunesData, error: tunesError } = await supabase
         .from('tunes')
         .select(`
@@ -44,31 +34,19 @@ export default function TunesPage() {
 
       if (tunesError) throw tunesError
 
-      // Fetch practice info separately
-      const { data: practiceData } = await supabase
-        .from('user_tune_practice')
-        .select('*')
-        .eq('user_id', userId)
-
-      // Create a map of practice info by tune_id
-      const practiceMap = new Map(
-        (practiceData || []).map((p: any) => [p.tune_id, p])
-      )
-
       // Transform the data
       const transformedData: Tune[] = (tunesData || []).map((tune: any) => ({
         ...tune,
         tune_type: tune.tune_types?.name,
         key: tune.musical_keys?.name,
-        practice_info: practiceMap.get(tune.id) || null,
       }))
 
       // Apply filters
       let filtered = transformedData
-      if (filter === 'practicing') {
-        filtered = transformedData.filter(t => t.practice_info?.is_active)
-      } else if (filter === 'favorites') {
-        filtered = transformedData.filter(t => t.practice_info?.is_favorite)
+      if (filter === 'learned') {
+        filtered = transformedData.filter(t => !t.to_be_learned)
+      } else if (filter === 'to-learn') {
+        filtered = transformedData.filter(t => t.to_be_learned)
       }
 
       setTunes(filtered)
@@ -77,20 +55,6 @@ export default function TunesPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const getProficiencyLabel = (level: number | null) => {
-    if (!level) return 'Not started'
-    const labels = ['', 'Learning', 'Practicing', 'Competent', 'Proficient', 'Mastered']
-    return labels[level] || 'Not started'
-  }
-
-  const getProficiencyColor = (level: number | null) => {
-    if (!level) return 'bg-gray-100 text-gray-600'
-    if (level <= 2) return 'bg-yellow-100 text-yellow-700'
-    if (level === 3) return 'bg-blue-100 text-blue-700'
-    if (level === 4) return 'bg-green-100 text-green-700'
-    return 'bg-irish-green-100 text-irish-green-700'
   }
 
   return (
@@ -118,24 +82,24 @@ export default function TunesPage() {
           All Tunes
         </button>
         <button
-          onClick={() => setFilter('practicing')}
+          onClick={() => setFilter('learned')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'practicing'
+            filter === 'learned'
               ? 'bg-irish-green-600 text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          Currently Practicing
+          ✓ Learned
         </button>
         <button
-          onClick={() => setFilter('favorites')}
+          onClick={() => setFilter('to-learn')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'favorites'
+            filter === 'to-learn'
               ? 'bg-irish-green-600 text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          ⭐ Favorites
+          📖 To Learn
         </button>
       </div>
 
@@ -168,8 +132,10 @@ export default function TunesPage() {
                     <h3 className="text-xl font-semibold text-gray-900">
                       {tune.title}
                     </h3>
-                    {tune.practice_info?.is_favorite && (
-                      <span className="text-xl">⭐</span>
+                    {tune.to_be_learned && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                        📖 To Learn
+                      </span>
                     )}
                   </div>
                   <div className="flex gap-4 text-sm text-gray-600 mb-3">
@@ -188,29 +154,9 @@ export default function TunesPage() {
                         ⏱️ {tune.time_signature}
                       </span>
                     )}
-                    {tune.difficulty_level && (
-                      <span className="flex items-center gap-1">
-                        📊 Difficulty: {tune.difficulty_level}/5
-                      </span>
-                    )}
                   </div>
                   {tune.notes && (
                     <p className="text-gray-600 text-sm line-clamp-2">{tune.notes}</p>
-                  )}
-                </div>
-                <div className="ml-4 text-right">
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getProficiencyColor(
-                      tune.practice_info?.proficiency_level || null
-                    )}`}
-                  >
-                    {getProficiencyLabel(tune.practice_info?.proficiency_level || null)}
-                  </span>
-                  {tune.practice_info?.last_practiced_at && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Last practiced:{' '}
-                      {new Date(tune.practice_info.last_practiced_at).toLocaleDateString()}
-                    </p>
                   )}
                 </div>
               </div>

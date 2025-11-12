@@ -105,7 +105,7 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
       // Get tunes not already in this set
       const tunesInSet = tunes.map((t) => t.tune.id)
 
-      // Fetch all tunes
+      // Fetch all tunes that are not marked as "to be learned"
       const { data: tunesData, error } = await supabase
         .from('tunes')
         .select(`
@@ -113,6 +113,7 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
           tune_types(name),
           musical_keys(name)
         `)
+        .eq('to_be_learned', false)
         .order('title')
 
       if (error) {
