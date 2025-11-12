@@ -90,23 +90,23 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+    <div className="max-w-6xl mx-auto px-2 sm:px-4">
+      <div className="text-center mb-4 sm:mb-8">
+        <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1 sm:mb-2">
           🎵 Irish Session Helper
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-sm sm:text-lg text-gray-600">
           Quick access to your tune sets
         </p>
       </div>
 
       {/* Sets List */}
       <div className="mb-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Your Sets</h2>
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Your Sets</h2>
           <Link
             href="/sets"
-            className="text-sm text-irish-green-600 hover:text-irish-green-700 font-medium"
+            className="text-xs sm:text-sm text-irish-green-600 hover:text-irish-green-700 font-medium"
           >
             View All →
           </Link>
@@ -117,31 +117,31 @@ export default function Home() {
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-irish-green-600 border-r-transparent"></div>
           </div>
         ) : sets.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg">
             <p className="text-gray-600 mb-4">No sets yet</p>
             <Link
               href="/sets"
-              className="inline-block px-6 py-3 bg-irish-green-600 text-white rounded-lg hover:bg-irish-green-700 font-medium"
+              className="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-irish-green-600 text-white rounded-lg hover:bg-irish-green-700 font-medium text-sm sm:text-base"
             >
               Create Your First Set
             </Link>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-3 sm:space-y-6">
             {sets.map((set) => (
-              <div key={set.id} className="bg-white rounded-lg shadow-md p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <Link href={`/sets/${set.id}`} className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">{set.name}</h3>
+              <div key={set.id} className="bg-white rounded-lg shadow-md p-3 sm:p-4">
+                <div className="flex items-start justify-between mb-2 gap-2">
+                  <Link href={`/sets/${set.id}`} className="flex-1 min-w-0">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">{set.name}</h3>
                     {set.description && (
-                      <p className="text-sm text-gray-600 mb-3">{set.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{set.description}</p>
                     )}
                   </Link>
                   <button
                     onClick={() => toggleSet(set.id)}
-                    className="ml-2 px-3 py-1 text-sm text-irish-green-600 hover:bg-irish-green-50 rounded"
+                    className="flex-shrink-0 px-2 sm:px-3 py-1 text-xs sm:text-sm text-irish-green-600 hover:bg-irish-green-50 rounded whitespace-nowrap"
                   >
-                    {expandedSets.has(set.id) ? '🎼 Hide Music' : '🎼 Show Music'}
+                    {expandedSets.has(set.id) ? '🎼 Hide' : '🎼 Show'}
                   </button>
                 </div>
 
@@ -165,17 +165,19 @@ export default function Home() {
                       return (
                         <div key={idx} className="border-b border-gray-100 pb-2 last:border-0">
                           <Link href={`/tunes/${set.tunes[idx]?.id || '#'}`}>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-gray-400 font-mono text-xs">{idx + 1}.</span>
-                              <span className="text-gray-900 font-medium text-sm">{tune.title}</span>
+                            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                              <span className="text-gray-400 font-mono text-xs flex-shrink-0">{idx + 1}.</span>
+                              <span className="text-gray-900 font-medium text-sm sm:text-base truncate">{tune.title}</span>
                               {tune.key && (
-                                <span className="text-gray-500 text-xs">({tune.key})</span>
+                                <span className="text-gray-500 text-xs flex-shrink-0">({tune.key})</span>
                               )}
                             </div>
                           </Link>
                           {expandedSets.has(set.id) && firstTwoBarsAbc && (
-                            <div className="ml-5 bg-gray-50 p-1.5 rounded overflow-x-auto scale-75 origin-left">
-                              <ABCNotationRenderer abc={firstTwoBarsAbc} />
+                            <div className="ml-3 sm:ml-5 bg-gray-50 p-1 sm:p-1.5 rounded overflow-x-auto">
+                              <div className="scale-[0.6] sm:scale-75 origin-left">
+                                <ABCNotationRenderer abc={firstTwoBarsAbc} />
+                              </div>
                             </div>
                           )}
                         </div>

@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   description: 'Track your Irish traditional music practice sessions and build your repertoire',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -20,7 +26,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="min-h-screen bg-gray-50">
           <Navigation />
-          <main className="container mx-auto px-4 py-8">
+          <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
             {children}
           </main>
         </div>
