@@ -79,12 +79,6 @@ export default function EditSetPage({ params }: { params: Promise<{ id: string }
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <Link
-          href={`/sets/${id}`}
-          className="text-irish-green-600 hover:text-irish-green-700 mb-4 inline-block"
-        >
-          ← Back to set
-        </Link>
         <h1 className="text-3xl font-bold text-gray-900">Edit Set</h1>
       </div>
 

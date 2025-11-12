@@ -139,9 +139,6 @@ export default function LogPracticePage({ params }: { params: Promise<{ id: stri
     return (
       <div className="text-center py-12">
         <p className="text-xl text-gray-600 mb-4">Tune not found</p>
-        <Link href="/tunes" className="text-irish-green-600 hover:text-irish-green-700">
-          ← Back to tunes
-        </Link>
       </div>
     )
   }
@@ -149,12 +146,6 @@ export default function LogPracticePage({ params }: { params: Promise<{ id: stri
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <Link
-          href={`/tunes/${id}`}
-          className="text-irish-green-600 hover:text-irish-green-700 mb-4 inline-block"
-        >
-          ← Back to {tune.title}
-        </Link>
         <h1 className="text-3xl font-bold text-gray-900">Log Practice Session</h1>
         <p className="text-gray-600 mt-2">
           Track your practice for <span className="font-semibold">{tune.title}</span>

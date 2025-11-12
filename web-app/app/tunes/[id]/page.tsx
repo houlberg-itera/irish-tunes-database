@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import ABCNotationRenderer from '@/components/ABCNotationRenderer'
 import Link from 'next/link'
+import abcjs from 'abcjs'
 
 type Tune = {
   id: string
@@ -38,10 +39,40 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
   const [practiceInfo, setPracticeInfo] = useState<PracticeInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [transposeSteps, setTransposeSteps] = useState(0)
+  const [transposedAbc, setTransposedAbc] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTune()
   }, [id])
+
+  useEffect(() => {
+    if (tune?.abc_notation) {
+      transposeAbc()
+    }
+  }, [transposeSteps, tune?.abc_notation])
+
+  function transposeAbc() {
+    if (!tune?.abc_notation || transposeSteps === 0) {
+      setTransposedAbc(null)
+      return
+    }
+
+    try {
+      const tuneBook = abcjs.parseOnly(tune.abc_notation)
+      if (tuneBook && tuneBook[0]) {
+        const transposed = abcjs.transpose(tuneBook[0], transposeSteps)
+        setTransposedAbc(transposed)
+      }
+    } catch (error) {
+      console.error('Error transposing ABC:', error)
+      setTransposedAbc(null)
+    }
+  }
+
+  const handleTransposeChange = (steps: number) => {
+    setTransposeSteps(steps)
+  }
 
   async function fetchTune() {
     try {
@@ -180,9 +211,6 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="text-center py-12">
         <p className="text-xl text-gray-600 mb-4">Tune not found</p>
-        <Link href="/tunes" className="text-irish-green-600 hover:text-irish-green-700">
-          ← Back to tunes
-        </Link>
       </div>
     )
   }
@@ -191,12 +219,6 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
     <div className="max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <Link
-          href="/tunes"
-          className="text-irish-green-600 hover:text-irish-green-700 mb-4 inline-block"
-        >
-          ← Back to tunes
-        </Link>
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">{tune.title}</h1>
@@ -240,19 +262,43 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* ABC Notation / Sheet Music */}
+          {/* Sheet Music */}
           {tune.abc_notation && (
             <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-4">Sheet Music</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Sheet Music</h2>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600">Transpose:</label>
+                  <select
+                    value={transposeSteps}
+                    onChange={(e) => handleTransposeChange(Number(e.target.value))}
+                    className="px-3 py-1 border border-gray-300 rounded text-sm"
+                  >
+                    <option value="-6">-6 semitones</option>
+                    <option value="-5">-5 semitones</option>
+                    <option value="-4">-4 semitones</option>
+                    <option value="-3">-3 semitones</option>
+                    <option value="-2">-2 semitones</option>
+                    <option value="-1">-1 semitone</option>
+                    <option value="0">Original Key</option>
+                    <option value="1">+1 semitone</option>
+                    <option value="2">+2 semitones</option>
+                    <option value="3">+3 semitones</option>
+                    <option value="4">+4 semitones</option>
+                    <option value="5">+5 semitones</option>
+                    <option value="6">+6 semitones</option>
+                  </select>
+                </div>
+              </div>
               <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto">
-                <ABCNotationRenderer abc={tune.abc_notation} />
+                <ABCNotationRenderer abc={transposedAbc || tune.abc_notation} />
               </div>
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-900">
                   View ABC Notation
                 </summary>
                 <pre className="mt-2 p-4 bg-gray-100 rounded text-sm font-mono overflow-x-auto">
-                  {tune.abc_notation}
+                  {transposedAbc || tune.abc_notation}
                 </pre>
               </details>
             </div>

@@ -207,9 +207,6 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
     return (
       <div className="text-center py-12">
         <p className="text-xl text-gray-600 mb-4">Set not found</p>
-        <Link href="/sets" className="text-irish-green-600 hover:text-irish-green-700">
-          ← Back to sets
-        </Link>
       </div>
     )
   }
@@ -217,9 +214,6 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
-        <Link href="/sets" className="text-irish-green-600 hover:text-irish-green-700 mb-4 inline-block">
-          ← Back to sets
-        </Link>
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">{set.name}</h1>

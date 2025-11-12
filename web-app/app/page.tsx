@@ -15,6 +15,7 @@ type TuneSet = {
 export default function Home() {
   const [sets, setSets] = useState<TuneSet[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedSets, setExpandedSets] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchSets()
@@ -78,6 +79,16 @@ export default function Home() {
     }
   }
 
+  const toggleSet = (setId: string) => {
+    const newExpanded = new Set(expandedSets)
+    if (newExpanded.has(setId)) {
+      newExpanded.delete(setId)
+    } else {
+      newExpanded.add(setId)
+    }
+    setExpandedSets(newExpanded)
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-8">
@@ -87,38 +98,6 @@ export default function Home() {
         <p className="text-lg text-gray-600">
           Quick access to your tune sets
         </p>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-        <Link
-          href="/tunes"
-          className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-center"
-        >
-          <div className="text-3xl mb-1">📚</div>
-          <div className="text-sm font-semibold">My Tunes</div>
-        </Link>
-        <Link
-          href="/tunes/add"
-          className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-center"
-        >
-          <div className="text-3xl mb-1">➕</div>
-          <div className="text-sm font-semibold">Add Tune</div>
-        </Link>
-        <Link
-          href="/sets"
-          className="p-4 bg-irish-green-100 rounded-lg shadow hover:shadow-md transition-shadow text-center border-2 border-irish-green-500"
-        >
-          <div className="text-3xl mb-1">🎼</div>
-          <div className="text-sm font-semibold">All Sets</div>
-        </Link>
-        <Link
-          href="/practice"
-          className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-center"
-        >
-          <div className="text-3xl mb-1">📊</div>
-          <div className="text-sm font-semibold">Stats</div>
-        </Link>
       </div>
 
       {/* Sets List */}
@@ -151,12 +130,20 @@ export default function Home() {
           <div className="space-y-6">
             {sets.map((set) => (
               <div key={set.id} className="bg-white rounded-lg shadow-md p-4">
-                <Link href={`/sets/${set.id}`}>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{set.name}</h3>
-                  {set.description && (
-                    <p className="text-sm text-gray-600 mb-3">{set.description}</p>
-                  )}
-                </Link>
+                <div className="flex items-start justify-between mb-2">
+                  <Link href={`/sets/${set.id}`} className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">{set.name}</h3>
+                    {set.description && (
+                      <p className="text-sm text-gray-600 mb-3">{set.description}</p>
+                    )}
+                  </Link>
+                  <button
+                    onClick={() => toggleSet(set.id)}
+                    className="ml-2 px-3 py-1 text-sm text-irish-green-600 hover:bg-irish-green-50 rounded"
+                  >
+                    {expandedSets.has(set.id) ? '🎼 Hide Music' : '🎼 Show Music'}
+                  </button>
+                </div>
 
                 {set.tunes.length > 0 && (
                   <div className="space-y-2">
@@ -186,7 +173,7 @@ export default function Home() {
                               )}
                             </div>
                           </Link>
-                          {firstTwoBarsAbc && (
+                          {expandedSets.has(set.id) && firstTwoBarsAbc && (
                             <div className="ml-5 bg-gray-50 p-1.5 rounded overflow-x-auto scale-75 origin-left">
                               <ABCNotationRenderer abc={firstTwoBarsAbc} />
                             </div>
