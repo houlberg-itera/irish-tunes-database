@@ -40,6 +40,7 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
   const [availableTunes, setAvailableTunes] = useState<AvailableTune[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [adding, setAdding] = useState(false)
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   useEffect(() => {
     fetchSetData()
@@ -191,6 +192,74 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
     }
   }
 
+  async function reorderTunes(fromIndex: number, toIndex: number) {
+    const reorderedTunes = [...tunes]
+    const [movedTune] = reorderedTunes.splice(fromIndex, 1)
+    reorderedTunes.splice(toIndex, 0, movedTune)
+
+    // Update local state immediately for better UX
+    setTunes(reorderedTunes)
+
+    try {
+      // Update positions in database
+      const updates = reorderedTunes.map((tune, index) => ({
+        id: tune.id,
+        position: index + 1,
+      }))
+
+      // Update each item's position
+      await Promise.all(
+        updates.map((update) =>
+          supabase.from('tune_set_items').update({ position: update.position }).eq('id', update.id)
+        )
+      )
+    } catch (error) {
+      console.error('Error reordering tunes:', error)
+      alert('Failed to reorder tunes')
+      // Reload data on error
+      fetchSetData()
+    }
+  }
+
+  function handleDragStart(index: number) {
+    setDraggedIndex(index)
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    
+    if (draggedIndex === null || draggedIndex === index) return
+
+    // Move the item while dragging
+    const reorderedTunes = [...tunes]
+    const [movedTune] = reorderedTunes.splice(draggedIndex, 1)
+    reorderedTunes.splice(index, 0, movedTune)
+    
+    setTunes(reorderedTunes)
+    setDraggedIndex(index)
+  }
+
+  function handleDragEnd() {
+    if (draggedIndex === null) return
+
+    // Save the new order to database
+    const updates = tunes.map((tune, index) => ({
+      id: tune.id,
+      position: index + 1,
+    }))
+
+    Promise.all(
+      updates.map((update) =>
+        supabase.from('tune_set_items').update({ position: update.position }).eq('id', update.id)
+      )
+    ).catch((error) => {
+      console.error('Error saving order:', error)
+      fetchSetData() // Reload on error
+    })
+
+    setDraggedIndex(null)
+  }
+
   const filteredTunes = availableTunes.filter((tune) =>
     tune.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -261,9 +330,36 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow">
+          <div className="p-4 bg-gray-50 border-b">
+            <p className="text-sm text-gray-600">💡 Drag and drop to reorder tunes</p>
+          </div>
           <div className="divide-y">
             {tunes.map((item, index) => (
-              <div key={item.id} className="p-4 hover:bg-gray-50 flex items-center gap-4">
+              <div
+                key={item.id}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`p-4 flex items-center gap-4 cursor-move transition-colors ${
+                  draggedIndex === index ? 'bg-irish-green-50 opacity-50' : 'hover:bg-gray-50'
+                }`}
+              >
+                <div className="text-gray-400 cursor-grab active:cursor-grabbing">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 8h16M4 16h16"
+                    />
+                  </svg>
+                </div>
                 <div className="text-2xl font-bold text-gray-400 w-8">{index + 1}</div>
                 <Link href={`/tunes/${item.tune.id}`} className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{item.tune.title}</h3>
