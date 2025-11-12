@@ -21,6 +21,12 @@ type Tune = {
   thesession_tune_id?: number
 }
 
+type TuneSet = {
+  id: string
+  name: string
+  position: number
+}
+
 export default function TuneDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
@@ -31,9 +37,11 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
   const [transposedAbc, setTransposedAbc] = useState<string | null>(null)
   const [youtubeLinks, setYoutubeLinks] = useState<Array<{title: string, url: string}>>([])
   const [showYouTube, setShowYouTube] = useState(false)
+  const [tuneSets, setTuneSets] = useState<TuneSet[]>([])
 
   useEffect(() => {
     fetchTune()
+    fetchTuneSets()
   }, [id])
 
   useEffect(() => {
@@ -110,6 +118,46 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
       console.error('Error fetching tune:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchTuneSets() {
+    try {
+      // Find all set items that contain this tune
+      const { data: setItems, error: itemsError } = await supabase
+        .from('tune_set_items')
+        .select('set_id, position')
+        .eq('tune_id', id)
+
+      if (itemsError) throw itemsError
+
+      if (!setItems || setItems.length === 0) {
+        setTuneSets([])
+        return
+      }
+
+      // Get the set details
+      const setIds = setItems.map(item => item.set_id)
+      const { data: setsData, error: setsError } = await supabase
+        .from('tune_sets')
+        .select('id, name')
+        .in('id', setIds)
+
+      if (setsError) throw setsError
+
+      // Combine the data
+      const setsWithPosition = setItems.map(item => {
+        const setData = setsData?.find(s => s.id === item.set_id)
+        return {
+          id: item.set_id,
+          name: setData?.name || 'Unknown Set',
+          position: item.position,
+        }
+      })
+
+      setTuneSets(setsWithPosition.sort((a, b) => a.name.localeCompare(b.name)))
+    } catch (error) {
+      console.error('Error fetching tune sets:', error)
     }
   }
 
@@ -308,6 +356,39 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
           </div>
+
+          {/* Sets containing this tune */}
+          {tuneSets.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">📚 Appears in Sets</h2>
+              <div className="space-y-2">
+                {tuneSets.map((set) => (
+                  <Link
+                    key={set.id}
+                    href={`/sets/${set.id}`}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-irish-green-300 hover:bg-gray-50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-irish-green-100 text-irish-green-700 rounded-full flex items-center justify-center text-sm font-bold">
+                        {set.position}
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {set.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Position {set.position} in set
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-irish-green-600 font-medium group-hover:text-irish-green-700">
+                      View Set →
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
