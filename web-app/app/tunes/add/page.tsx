@@ -238,6 +238,14 @@ export default function AddTunePage() {
     setError('')
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('You must be logged in to add tunes')
+        setLoading(false)
+        return
+      }
+
       const { data: tune, error: tuneError } = await supabase
         .from('tunes')
         .insert([
@@ -251,6 +259,7 @@ export default function AddTunePage() {
             region: formData.region || null,
             thesession_tune_id: formData.thesession_tune_id,
             to_be_learned: formData.to_be_learned,
+            user_id: user.id,
           },
         ])
         .select()

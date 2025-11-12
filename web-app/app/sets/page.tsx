@@ -101,10 +101,19 @@ export default function SetsPage() {
 
     setCreating(true)
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        alert('You must be logged in to create sets')
+        setCreating(false)
+        return
+      }
+
       const { error } = await supabase.from('tune_sets').insert([
         {
           name: newSetName,
           description: newSetDescription || null,
+          user_id: user.id,
         },
       ])
 

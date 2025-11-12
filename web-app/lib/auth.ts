@@ -1,0 +1,15 @@
+import { supabase } from './supabase'
+
+export async function getCurrentUserId(): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user?.id || null
+}
+
+export async function getCurrentUserEmail(): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user?.email || null
+}
