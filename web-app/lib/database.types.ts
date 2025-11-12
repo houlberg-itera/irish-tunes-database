@@ -28,6 +28,7 @@ export interface Database {
           notes: string | null
           historical_notes: string | null
           thesession_tune_id: number | null
+          to_be_learned: boolean
           created_at: string
           updated_at: string
           created_by: string | null
@@ -51,6 +52,7 @@ export interface Database {
           notes?: string | null
           historical_notes?: string | null
           thesession_tune_id?: number | null
+          to_be_learned?: boolean
           created_at?: string
           updated_at?: string
           created_by?: string | null
@@ -73,6 +75,7 @@ export interface Database {
           notes?: string | null
           historical_notes?: string | null
           thesession_tune_id?: number | null
+          to_be_learned?: boolean
           created_at?: string
           updated_at?: string
           created_by?: string | null

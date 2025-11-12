@@ -6,8 +6,8 @@ import Navigation from '@/components/Navigation'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Irish Tunes Practice Tracker',
-  description: 'Track your Irish traditional music practice sessions and build your repertoire',
+  title: 'Irish Tunes Tracker',
+  description: 'Manage your Irish traditional music repertoire and track what you\'re learning',
 }
 
 export const viewport = {
