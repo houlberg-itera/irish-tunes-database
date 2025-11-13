@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import ABCNotationRenderer from '@/components/ABCNotationRenderer'
+import { cleanAndCompleteABC } from '@/lib/abc-utils'
 
 type TheSessionTune = {
   id: number
@@ -216,7 +217,12 @@ export default function AddTunePage() {
         tune_type_id: tuneType?.id ? String(tuneType.id) : '',
         key_id: matchedKey?.id ? String(matchedKey.id) : '',
         time_signature: timeSignature,
-        abc_notation: firstSetting.abc || '',
+        abc_notation: cleanAndCompleteABC(
+          firstSetting.abc || '',
+          fullTuneData.name,
+          firstSetting.key,
+          firstSetting.meter
+        ),
         thesession_tune_id: fullTuneData.id,
         notes: `Imported from The Session (tune #${fullTuneData.id})${firstSetting.key ? `\nOriginal key: ${firstSetting.key}` : ''}`,
       })

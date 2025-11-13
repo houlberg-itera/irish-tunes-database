@@ -5,6 +5,8 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import ABCNotationRenderer from '@/components/ABCNotationRenderer'
+import { extractABCPreview } from '@/lib/abc-utils'
 
 type TuneSet = {
   id: string
@@ -20,6 +22,7 @@ type SetTune = {
     title: string
     tune_type?: { name: string }
     musical_key?: { name: string }
+    abc_notation?: string
   }
 }
 
@@ -88,6 +91,7 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
               title: tuneData?.title || '',
               tune_type: tuneData?.tune_types,
               musical_key: tuneData?.musical_keys,
+              abc_notation: tuneData?.abc_notation || '',
             },
           }
         })
@@ -334,48 +338,63 @@ export default function SetDetailPage({ params }: { params: Promise<{ id: string
             <p className="text-sm text-gray-600">💡 Drag and drop to reorder tunes</p>
           </div>
           <div className="divide-y">
-            {tunes.map((item, index) => (
-              <div
-                key={item.id}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-                className={`p-4 flex items-center gap-4 cursor-move transition-colors ${
-                  draggedIndex === index ? 'bg-irish-green-50 opacity-50' : 'hover:bg-gray-50'
-                }`}
-              >
-                <div className="text-gray-400 cursor-grab active:cursor-grabbing">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 8h16M4 16h16"
-                    />
-                  </svg>
-                </div>
-                <div className="text-2xl font-bold text-gray-400 w-8">{index + 1}</div>
-                <Link href={`/tunes/${item.tune.id}`} className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{item.tune.title}</h3>
-                  <div className="flex gap-4 text-sm text-gray-600">
-                    {item.tune.tune_type && <span>🎵 {item.tune.tune_type.name}</span>}
-                    {item.tune.musical_key && <span>🎹 {item.tune.musical_key.name}</span>}
-                  </div>
-                </Link>
-                <button
-                  onClick={() => removeTuneFromSet(item.id)}
-                  className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+            {tunes.map((item, index) => {
+              const snippetAbc = item.tune.abc_notation 
+                ? extractABCPreview(item.tune.abc_notation, 2)
+                : null
+
+              return (
+                <div
+                  key={item.id}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`p-4 transition-colors ${
+                    draggedIndex === index ? 'bg-irish-green-50 opacity-50' : 'hover:bg-gray-50'
+                  }`}
                 >
-                  Remove
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center gap-4 cursor-move mb-3">
+                    <div className="text-gray-400 cursor-grab active:cursor-grabbing">
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 8h16M4 16h16"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-400 w-8">{index + 1}</div>
+                    <Link href={`/tunes/${item.tune.id}`} className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">{item.tune.title}</h3>
+                      <div className="flex gap-4 text-sm text-gray-600">
+                        {item.tune.tune_type && <span>🎵 {item.tune.tune_type.name}</span>}
+                        {item.tune.musical_key && <span>🎹 {item.tune.musical_key.name}</span>}
+                      </div>
+                    </Link>
+                    <button
+                      onClick={() => removeTuneFromSet(item.id)}
+                      className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  
+                  {/* ABC snippet */}
+                  {snippetAbc && (
+                    <div className="ml-14 bg-gray-50 p-3 rounded overflow-x-auto">
+                      <ABCNotationRenderer abc={snippetAbc} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

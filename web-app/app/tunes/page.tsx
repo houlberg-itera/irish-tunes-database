@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import type { Database } from '@/lib/database.types'
+import ABCNotationRenderer from '@/components/ABCNotationRenderer'
+import { extractABCPreview } from '@/lib/abc-utils'
 
 type Tune = Database['public']['Tables']['tunes']['Row'] & {
   tune_type?: string
@@ -120,48 +122,71 @@ export default function TunesPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {tunes.map((tune) => (
-            <Link
-              key={tune.id}
-              href={`/tunes/${tune.id}`}
-              className="block bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow border-2 border-transparent hover:border-irish-green-200"
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {tune.title}
-                    </h3>
-                    {tune.to_be_learned && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                        📖 To Learn
-                      </span>
+          {tunes.map((tune) => {
+            let snippetAbc = null
+            if (tune.abc_notation) {
+              try {
+                snippetAbc = extractABCPreview(tune.abc_notation, 2)
+              } catch (e) {
+                console.error('Error extracting preview for', tune.title, e)
+              }
+            }
+            
+            return (
+              <div
+                key={tune.id}
+                className="bg-white rounded-lg shadow hover:shadow-md transition-shadow border-2 border-transparent hover:border-irish-green-200"
+              >
+                <Link
+                  href={`/tunes/${tune.id}`}
+                  className="block p-4 sm:p-6"
+                >
+                  <div className="flex flex-col gap-4">
+                    {/* Tune info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-semibold text-gray-900 truncate">
+                          {tune.title}
+                        </h3>
+                        {tune.to_be_learned && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded flex-shrink-0">
+                            📖 To Learn
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-3 sm:gap-4 text-sm text-gray-600 mb-2">
+                        {tune.tune_type && (
+                          <span className="flex items-center gap-1">
+                            🎵 {tune.tune_type}
+                          </span>
+                        )}
+                        {tune.key && (
+                          <span className="flex items-center gap-1">
+                            🎹 {tune.key}
+                          </span>
+                        )}
+                        {tune.time_signature && (
+                          <span className="flex items-center gap-1">
+                            ⏱️ {tune.time_signature}
+                          </span>
+                        )}
+                      </div>
+                      {tune.notes && (
+                        <p className="text-gray-600 text-sm line-clamp-2">{tune.notes}</p>
+                      )}
+                    </div>
+                    
+                    {/* ABC snippet - full width below */}
+                    {snippetAbc && (
+                      <div className="bg-gray-50 p-3 rounded overflow-x-auto">
+                        <ABCNotationRenderer abc={snippetAbc} />
+                      </div>
                     )}
                   </div>
-                  <div className="flex gap-4 text-sm text-gray-600 mb-3">
-                    {tune.tune_type && (
-                      <span className="flex items-center gap-1">
-                        🎵 {tune.tune_type}
-                      </span>
-                    )}
-                    {tune.key && (
-                      <span className="flex items-center gap-1">
-                        🎹 {tune.key}
-                      </span>
-                    )}
-                    {tune.time_signature && (
-                      <span className="flex items-center gap-1">
-                        ⏱️ {tune.time_signature}
-                      </span>
-                    )}
-                  </div>
-                  {tune.notes && (
-                    <p className="text-gray-600 text-sm line-clamp-2">{tune.notes}</p>
-                  )}
-                </div>
+                </Link>
               </div>
-            </Link>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
