@@ -31,9 +31,11 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
   const [transposedAbc, setTransposedAbc] = useState<string | null>(null)
   const [youtubeLinks, setYoutubeLinks] = useState<Array<{title: string, url: string}>>([])
   const [showYouTube, setShowYouTube] = useState(false)
+  const [tuneSets, setTuneSets] = useState<Array<{id: string, name: string, position: number}>>([])
 
   useEffect(() => {
     fetchTune()
+    fetchTuneSets()
   }, [id])
 
   useEffect(() => {
@@ -85,6 +87,33 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
     }))
 
     setYoutubeLinks(links)
+  }
+
+  async function fetchTuneSets() {
+    try {
+      const { data, error } = await supabase
+        .from('tune_set_items')
+        .select(`
+          position,
+          tune_sets(id, name)
+        `)
+        .eq('tune_id', id)
+        .order('position')
+
+      if (error) throw error
+
+      const sets = data
+        ?.filter(item => item.tune_sets)
+        .map(item => ({
+          id: item.tune_sets.id,
+          name: item.tune_sets.name,
+          position: item.position
+        })) || []
+
+      setTuneSets(sets)
+    } catch (error) {
+      console.error('Error fetching tune sets:', error)
+    }
   }
 
   async function fetchTune() {
@@ -234,6 +263,27 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-xl font-semibold mb-4">Notes</h2>
               <p className="text-gray-700 whitespace-pre-wrap">{tune.notes}</p>
+            </div>
+          )}
+
+          {/* Appears in Sets */}
+          {tuneSets.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">Appears in Sets</h2>
+              <div className="space-y-2">
+                {tuneSets.map((set) => (
+                  <Link
+                    key={set.id}
+                    href={`/sets/${set.id}`}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-irish-green-300 hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="font-medium text-gray-900">{set.name}</span>
+                    <span className="px-2 py-1 text-xs font-medium bg-irish-green-100 text-irish-green-800 rounded">
+                      Position {set.position}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 
