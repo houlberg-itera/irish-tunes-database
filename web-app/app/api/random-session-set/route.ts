@@ -11,11 +11,13 @@ export async function GET() {
   try {
     console.log('Fetching random tunes from database...')
     
-    // Get a random tune type that has at least 3 tunes
+    // Get a random tune type that has at least 3 tunes (from first 300 tunes only)
     const { data: typeCounts, error: typeError } = await supabase
       .from('session_tunes')
       .select('type')
       .not('type', 'is', null)
+      .order('id')
+      .limit(300)
     
     if (typeError) throw typeError
     
@@ -42,11 +44,13 @@ export async function GET() {
     const selectedType = validTypes[Math.floor(Math.random() * validTypes.length)]
     console.log(`Selected type: ${selectedType}`)
     
-    // Fetch all tunes of this type
+    // Fetch all tunes of this type (from first 300 only)
     const { data: tunes, error: tunesError } = await supabase
       .from('session_tunes')
       .select('*')
       .eq('type', selectedType)
+      .order('id')
+      .limit(300)
     
     if (tunesError) throw tunesError
     if (!tunes || tunes.length < 3) {
@@ -109,12 +113,16 @@ export async function GET() {
         ? cleanAndCompleteABC(abc, tune.name, key || undefined, undefined)
         : null
       
+      // Extract The Session tune ID from the data JSONB field
+      const tuneId = tune.data?.tune_id || tune.data?.id
+      
       return {
         id: tune.id,
         title: tune.name,
         type: tune.type,
         abc: completeAbc,
         key: key,
+        thesession_tune_id: tuneId,
       }
     })
     

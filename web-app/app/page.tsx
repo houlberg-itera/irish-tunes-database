@@ -177,14 +177,26 @@ export default function Home() {
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-gray-400 font-mono text-sm">{idx + 1}.</span>
                     <div className="flex-1">
-                      <a
-                        href={`https://thesession.org/tunes/${tune.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-lg font-semibold text-gray-900 hover:text-purple-600"
-                      >
-                        {tune.title}
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={tune.thesession_tune_id ? `https://thesession.org/tunes/${tune.thesession_tune_id}` : '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lg font-semibold text-gray-900 hover:text-purple-600"
+                        >
+                          {tune.title}
+                        </a>
+                        {tune.thesession_tune_id && (
+                          <a
+                            href={`https://thesession.org/tunes/${tune.thesession_tune_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-purple-600 hover:text-purple-700"
+                          >
+                            (The Session)
+                          </a>
+                        )}
+                      </div>
                       <div className="flex gap-3 text-sm text-gray-600">
                         {tune.type && <span>🎵 {tune.type}</span>}
                         {tune.key && <span>🎹 {tune.key}</span>}
