@@ -29,7 +29,6 @@ type SessionSet = {
 export default function Home() {
   const [sets, setSets] = useState<TuneSet[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedSets, setExpandedSets] = useState<Set<string>>(new Set())
   const [sessionSet, setSessionSet] = useState<SessionSet | null>(null)
   const [loadingSession, setLoadingSession] = useState(false)
   const [showSessionSet, setShowSessionSet] = useState(false)
@@ -94,16 +93,6 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const toggleSet = (setId: string) => {
-    const newExpanded = new Set(expandedSets)
-    if (newExpanded.has(setId)) {
-      newExpanded.delete(setId)
-    } else {
-      newExpanded.add(setId)
-    }
-    setExpandedSets(newExpanded)
   }
 
   async function fetchRandomSessionSet() {
@@ -253,33 +242,25 @@ export default function Home() {
           <div className="space-y-3 sm:space-y-6">
             {sets.map((set) => (
               <div key={set.id} className="bg-white rounded-lg shadow-md p-3 sm:p-4">
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <Link href={`/sets/${set.id}`} className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">{set.name}</h3>
-                    {set.description && (
-                      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{set.description}</p>
-                    )}
-                  </Link>
-                  <button
-                    onClick={() => toggleSet(set.id)}
-                    className="flex-shrink-0 px-2 sm:px-3 py-1 text-xs sm:text-sm text-irish-green-600 hover:bg-irish-green-50 rounded whitespace-nowrap"
-                  >
-                    {expandedSets.has(set.id) ? '🎼 Hide' : '🎼 Show'}
-                  </button>
-                </div>
+                <Link href={`/sets/${set.id}`} className="block">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">{set.name}</h3>
+                  {set.description && (
+                    <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3 line-clamp-2">{set.description}</p>
+                  )}
+                </Link>
 
                 {set.tunes.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {set.tunes.map((tune, idx) => {
-                      // Extract first 4 bars for preview
+                      // Extract first 2 bars for preview
                       const previewAbc = tune.abc_notation 
-                        ? extractABCPreview(tune.abc_notation, 4)
+                        ? extractABCPreview(tune.abc_notation, 2)
                         : ''
 
                       return (
-                        <div key={idx} className="border-b border-gray-100 pb-2 last:border-0">
+                        <div key={idx} className="border-b border-gray-100 pb-3 last:border-0">
                           <Link href={`/tunes/${set.tunes[idx]?.id || '#'}`}>
-                            <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                            <div className="flex items-center gap-1 sm:gap-2 mb-2">
                               <span className="text-gray-400 font-mono text-xs flex-shrink-0">{idx + 1}.</span>
                               <span className="text-gray-900 font-medium text-sm sm:text-base truncate">{tune.title}</span>
                               {tune.key && (
@@ -287,11 +268,9 @@ export default function Home() {
                               )}
                             </div>
                           </Link>
-                          {expandedSets.has(set.id) && previewAbc && (
-                            <div className="ml-3 sm:ml-5 bg-gray-50 p-1 sm:p-1.5 rounded overflow-x-auto">
-                              <div className="scale-[0.6] sm:scale-75 origin-left">
-                                <ABCNotationRenderer abc={previewAbc} />
-                              </div>
+                          {previewAbc && (
+                            <div className="ml-3 sm:ml-5 bg-gray-50 p-2 sm:p-3 rounded overflow-x-auto">
+                              <ABCNotationRenderer abc={previewAbc} />
                             </div>
                           )}
                         </div>
