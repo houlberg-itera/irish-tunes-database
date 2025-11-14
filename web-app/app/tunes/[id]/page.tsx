@@ -21,6 +21,13 @@ type Tune = {
   thesession_tune_id?: number
 }
 
+type TheSessionSet = {
+  id: number
+  name: string
+  url: string
+  date: string
+}
+
 export default function TuneDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
@@ -32,6 +39,8 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
   const [youtubeLinks, setYoutubeLinks] = useState<Array<{title: string, url: string}>>([])
   const [showYouTube, setShowYouTube] = useState(false)
   const [tuneSets, setTuneSets] = useState<Array<{id: string, name: string, position: number}>>([])
+  const [sessionSets, setSessionSets] = useState<TheSessionSet[]>([])
+  const [loadingSessionSets, setLoadingSessionSets] = useState(false)
 
   useEffect(() => {
     fetchTune()
@@ -49,6 +58,12 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
       generateYouTubeLinks(tune.title)
     }
   }, [tune?.title])
+
+  useEffect(() => {
+    if (tune?.thesession_tune_id) {
+      fetchSessionSets(tune.thesession_tune_id)
+    }
+  }, [tune?.thesession_tune_id])
 
   function transposeAbc() {
     if (!tune?.abc_notation || transposeSteps === 0) {
@@ -113,6 +128,32 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
       setTuneSets(sets)
     } catch (error) {
       console.error('Error fetching tune sets:', error)
+    }
+  }
+
+  async function fetchSessionSets(tuneId: number) {
+    setLoadingSessionSets(true)
+    try {
+      const response = await fetch(
+        `https://thesession.org/tunes/${tuneId}/sets?format=json`
+      )
+      const data = await response.json()
+      
+      if (data.sets && Array.isArray(data.sets)) {
+        setSessionSets(data.sets.map((set: any) => ({
+          id: set.id,
+          name: set.name,
+          url: set.url,
+          date: set.date
+        })))
+      } else {
+        setSessionSets([])
+      }
+    } catch (err) {
+      console.error('Error fetching sets from The Session:', err)
+      setSessionSets([])
+    } finally {
+      setLoadingSessionSets(false)
     }
   }
 
@@ -284,6 +325,55 @@ export default function TuneDetailPage({ params }: { params: Promise<{ id: strin
                   </Link>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* The Session Sets */}
+          {tune.thesession_tune_id && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">📚 Sets on The Session</h2>
+              {loadingSessionSets ? (
+                <div className="text-center py-8">
+                  <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-irish-green-600 border-r-transparent"></div>
+                  <p className="mt-2 text-sm text-gray-600">Loading sets from The Session...</p>
+                </div>
+              ) : sessionSets.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 mb-3">
+                    This tune appears in {sessionSets.length} set{sessionSets.length !== 1 ? 's' : ''} on The Session:
+                  </p>
+                  {sessionSets.map((set) => (
+                    <a
+                      key={set.id}
+                      href={set.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-gray-50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex-shrink-0 w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
+                          🎵
+                        </span>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">
+                            {set.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Added {new Date(set.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-irish-green-600 font-medium group-hover:text-irish-green-700">
+                        View on The Session →
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm py-4">
+                  This tune is not in any sets on The Session.
+                </p>
+              )}
             </div>
           )}
 
