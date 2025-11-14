@@ -12,7 +12,7 @@ type TuneSet = {
   description: string | null
   created_at: string
   tune_count: number
-  tunes: Array<{ title: string; abc_notation: string | null; key: string | null }>
+  tunes: Array<{ title: string; abc_notation: string | null; key: string | null; tune_type?: string }>
 }
 
 export default function SetsPage() {
@@ -22,10 +22,27 @@ export default function SetsPage() {
   const [newSetName, setNewSetName] = useState('')
   const [newSetDescription, setNewSetDescription] = useState('')
   const [creating, setCreating] = useState(false)
+  const [tuneTypes, setTuneTypes] = useState<Array<{ id: string; name: string }>>([])
+  const [selectedType, setSelectedType] = useState<string>('all')
 
   useEffect(() => {
+    fetchTuneTypes()
     fetchSets()
   }, [])
+
+  async function fetchTuneTypes() {
+    try {
+      const { data, error } = await supabase
+        .from('tune_types')
+        .select('id, name')
+        .order('name')
+
+      if (error) throw error
+      setTuneTypes(data || [])
+    } catch (error) {
+      console.error('Error fetching tune types:', error)
+    }
+  }
 
   async function fetchSets() {
     try {
@@ -67,7 +84,8 @@ export default function SetsPage() {
                 .select(`
                   title,
                   abc_notation,
-                  musical_keys(name)
+                  musical_keys(name),
+                  tune_types(name)
                 `)
                 .eq('id', item.tune_id)
                 .single()
@@ -75,7 +93,8 @@ export default function SetsPage() {
               return { 
                 title: tune?.title || 'Unknown',
                 abc_notation: tune?.abc_notation || null,
-                key: tune?.musical_keys?.name || null
+                key: tune?.musical_keys?.name || null,
+                tune_type: tune?.tune_types?.name || null
               }
             })
           )
@@ -134,6 +153,13 @@ export default function SetsPage() {
     }
   }
 
+  // Filter sets based on selected tune type
+  const filteredSets = selectedType === 'all' 
+    ? sets 
+    : sets.filter(set => 
+        set.tunes.some(tune => tune.tune_type === selectedType)
+      )
+
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -158,20 +184,55 @@ export default function SetsPage() {
         </button>
       </div>
 
-      {sets.length === 0 ? (
+      {/* Tune Type Filter */}
+      {sets.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Filter by tune type:</label>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-irish-green-500"
+            >
+              <option value="all">All Types</option>
+              {tuneTypes.map((type) => (
+                <option key={type.id} value={type.name}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+            {selectedType !== 'all' && (
+              <span className="text-sm text-gray-500">
+                Showing sets with {selectedType} tunes
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {filteredSets.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-xl text-gray-600 mb-4">No sets yet</p>
-          <p className="text-gray-500 mb-6">Create a set to organize your tunes for performances</p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-irish-green-600 text-white rounded-lg hover:bg-irish-green-700 font-medium"
-          >
-            Create Your First Set
-          </button>
+          {sets.length === 0 ? (
+            <>
+              <p className="text-xl text-gray-600 mb-4">No sets yet</p>
+              <p className="text-gray-500 mb-6">Create a set to organize your tunes for performances</p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-6 py-3 bg-irish-green-600 text-white rounded-lg hover:bg-irish-green-700 font-medium"
+              >
+                Create Your First Set
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-xl text-gray-600 mb-4">No sets found</p>
+              <p className="text-gray-500">No sets contain {selectedType} tunes</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sets.map((set) => (
+          {filteredSets.map((set) => (
             <Link
               key={set.id}
               href={`/sets/${set.id}`}

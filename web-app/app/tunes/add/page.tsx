@@ -19,6 +19,13 @@ type TheSessionTune = {
   }>
 }
 
+type TheSessionSet = {
+  id: number
+  name: string
+  url: string
+  date: string
+}
+
 export default function AddTunePage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
@@ -27,6 +34,8 @@ export default function AddTunePage() {
   const [showSearch, setShowSearch] = useState(false)
   const [youtubeLinks, setYoutubeLinks] = useState<Array<{title: string, url: string, thumbnail: string}>>([])
   const [loadingYoutube, setLoadingYoutube] = useState(false)
+  const [sessionSets, setSessionSets] = useState<TheSessionSet[]>([])
+  const [loadingSets, setLoadingSets] = useState(false)
   
   const [formData, setFormData] = useState({
     title: '',
@@ -147,6 +156,9 @@ export default function AddTunePage() {
         return
       }
 
+      // Fetch sets that include this tune
+      fetchSessionSets(tune.id)
+
       const firstSetting = fullTuneData.settings[0]
       
       // Extract time signature from ABC notation (M: line)
@@ -235,6 +247,32 @@ export default function AddTunePage() {
       setError('Failed to load tune details from The Session')
     } finally {
       setSearching(false)
+    }
+  }
+
+  async function fetchSessionSets(tuneId: number) {
+    setLoadingSets(true)
+    try {
+      const response = await fetch(
+        `https://thesession.org/tunes/${tuneId}/sets?format=json`
+      )
+      const data = await response.json()
+      
+      if (data.sets && Array.isArray(data.sets)) {
+        setSessionSets(data.sets.map((set: any) => ({
+          id: set.id,
+          name: set.name,
+          url: set.url,
+          date: set.date
+        })))
+      } else {
+        setSessionSets([])
+      }
+    } catch (err) {
+      console.error('Error fetching sets from The Session:', err)
+      setSessionSets([])
+    } finally {
+      setLoadingSets(false)
     }
   }
 
@@ -548,6 +586,55 @@ export default function AddTunePage() {
             ) : (
               <p className="text-gray-500 text-sm py-4">
                 Enter a tune name above to get YouTube search links.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* The Session Sets */}
+        {formData.thesession_tune_id && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">📚 Sets on The Session</h2>
+            {loadingSets ? (
+              <div className="text-center py-8">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-irish-green-600 border-r-transparent"></div>
+                <p className="mt-2 text-sm text-gray-600">Loading sets...</p>
+              </div>
+            ) : sessionSets.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600 mb-3">
+                  This tune appears in {sessionSets.length} set{sessionSets.length !== 1 ? 's' : ''} on The Session:
+                </p>
+                {sessionSets.map((set) => (
+                  <a
+                    key={set.id}
+                    href={set.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-irish-green-300 hover:bg-gray-50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
+                        🎵
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">
+                          {set.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Added {new Date(set.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-irish-green-600 font-medium group-hover:text-irish-green-700">
+                      View on The Session →
+                    </span>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm py-4">
+                This tune is not in any sets on The Session.
               </p>
             )}
           </div>
