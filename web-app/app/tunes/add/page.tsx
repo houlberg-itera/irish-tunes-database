@@ -161,14 +161,40 @@ export default function AddTunePage() {
 
       const firstSetting = fullTuneData.settings[0]
       
-      // Extract time signature from ABC notation (M: line)
+      console.log('First setting data:', JSON.stringify(firstSetting, null, 2)) // Debug log with full data
+      console.log('Full tune data type:', fullTuneData.type) // Check tune type for meter inference
+      
+      // Extract time signature - prefer meter field, fallback to ABC notation
       let timeSignature = ''
-      if (firstSetting.abc) {
+      
+      // First try the meter field from The Session
+      if (firstSetting.meter) {
+        timeSignature = firstSetting.meter
+      }
+      
+      // If no meter field, try to extract from ABC notation (M: line)
+      if (!timeSignature && firstSetting.abc) {
         const meterMatch = firstSetting.abc.match(/M:\s*(\d+\/\d+)/i)
         if (meterMatch) {
           timeSignature = meterMatch[1]
         }
       }
+      
+      // If still no time signature, infer from tune type
+      if (!timeSignature && fullTuneData.type) {
+        const tuneTypeLower = fullTuneData.type.toLowerCase()
+        if (tuneTypeLower === 'jig') {
+          timeSignature = '6/8'
+        } else if (tuneTypeLower === 'reel' || tuneTypeLower === 'hornpipe' || tuneTypeLower === 'polka') {
+          timeSignature = '4/4'
+        } else if (tuneTypeLower === 'slip jig') {
+          timeSignature = '9/8'
+        } else if (tuneTypeLower === 'waltz') {
+          timeSignature = '3/4'
+        }
+      }
+      
+      console.log('Time signature:', timeSignature, 'from meter:', firstSetting.meter, 'ABC has M: line:', firstSetting.abc?.includes('M:'), 'inferred from type:', fullTuneData.type)
       
       // Try to find matching tune type
       const tuneType = tuneTypes.find(
