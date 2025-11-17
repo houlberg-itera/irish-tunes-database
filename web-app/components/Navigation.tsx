@@ -17,6 +17,7 @@ export default function Navigation() {
     { href: '/tunes/add', label: 'Add Tune', icon: '➕' },
     { href: '/tunes/to-learn', label: 'To Learn', icon: '📖' },
     { href: '/sets', label: 'Sets', icon: '🎼' },
+    { href: '/identify', label: 'Identify', icon: '🎵' },
   ]
 
   if (loading || !user) {
