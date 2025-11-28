@@ -36,7 +36,7 @@ export async function middleware(req: NextRequest) {
   })
 
   // If no session and trying to access protected routes, redirect to login
-  if (!session && !req.nextUrl.pathname.startsWith('/login')) {
+  if (!session && !req.nextUrl.pathname.startsWith('/login') && !req.nextUrl.pathname.startsWith('/reset-password')) {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/login'
     console.log('Redirecting to login')
@@ -55,5 +55,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/tunes/:path*', '/sets/:path*', '/login'],
+  matcher: ['/', '/tunes/:path*', '/sets/:path*', '/popular', '/identify', '/admin', '/login', '/reset-password'],
 }

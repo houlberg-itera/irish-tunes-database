@@ -7,7 +7,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Irish Tunes Tracker',
+  title: 'Irish Session Helper',
   description: 'Manage your Irish traditional music repertoire and track what you\'re learning',
 }
 

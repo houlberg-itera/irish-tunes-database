@@ -11,14 +11,23 @@ export default function Navigation() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const { user, signOut, loading } = useAuth()
 
+  // Check if user is admin
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',')
+  const isAdmin = adminEmails.includes(user?.email || '')
+
   const links = [
     { href: '/', label: 'Home', icon: '🏠' },
     { href: '/tunes', label: 'My Tunes', icon: '📚' },
     { href: '/tunes/add', label: 'Add Tune', icon: '➕' },
     { href: '/tunes/to-learn', label: 'To Learn', icon: '📖' },
     { href: '/sets', label: 'Sets', icon: '🎼' },
+    { href: '/popular', label: 'Popular', icon: '🌟' },
     { href: '/identify', label: 'Identify', icon: '🎵' },
   ]
+
+  if (isAdmin) {
+    links.push({ href: '/admin', label: 'Admin', icon: '👤' })
+  }
 
   if (loading || !user) {
     return null
@@ -29,7 +38,7 @@ export default function Navigation() {
       <div className="container mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-between h-14 sm:h-16">
           <Link href="/" className="text-lg sm:text-xl font-bold text-irish-green-700 flex items-center gap-1">
-            🎵 <span className="hidden xs:inline">Irish Tunes</span>
+            🎵 <span className="hidden xs:inline">Irish Session Helper</span>
           </Link>
           
           {/* Mobile menu button */}
