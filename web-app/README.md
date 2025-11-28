@@ -1,4 +1,4 @@
-# Irish Tunes Practice Tracker - Web Application
+# Irish Session Helper - Web Application
 
 A Next.js web application for tracking your Irish traditional music practice sessions and building your tune repertoire.
 
